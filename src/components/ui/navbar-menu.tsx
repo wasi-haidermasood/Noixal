@@ -1,0 +1,203 @@
+import React from "react";
+import { motion } from "framer-motion";
+import { Link as RouterLink, LinkProps as RouterLinkProps } from "react-router-dom";
+
+const transition = {
+  type: "spring" as const,
+  mass: 0.5,
+  damping: 11.5,
+  stiffness: 100,
+  restDelta: 0.001,
+  restSpeed: 0.001,
+};
+
+/**
+ * Simple Image wrapper for Vite projects (replacement for next/image)
+ * - supports width/height (numbers) as props purely for layout/alt attributes
+ * - uses native <img> with lazy loading
+ */
+type ImgProps = React.ImgHTMLAttributes<HTMLImageElement> & {
+  width?: number;
+  height?: number;
+  src: string;
+  alt: string;
+  className?: string;
+};
+
+const Img: React.FC<ImgProps> = ({ src, alt, width, height, className, ...rest }) => {
+  return (
+    <img
+      src={src}
+      alt={alt}
+      width={width}
+      height={height}
+      loading="lazy"
+      className={className}
+      {...rest}
+    />
+  );
+};
+
+/* ---------------- MenuItem ---------------- */
+interface MenuItemProps {
+  setActive: (item: string) => void;
+  active: string | null;
+  item: string;
+  children?: React.ReactNode;
+}
+
+export const MenuItem: React.FC<MenuItemProps> = ({ setActive, active, item, children }) => {
+  return (
+    <div onMouseEnter={() => setActive(item)} className="relative">
+      <motion.p
+        transition={{ duration: 0.3 }}
+        className="cursor-pointer text-black hover:opacity-[0.9] dark:text-white"
+      >
+        {item}
+      </motion.p>
+
+      {active !== null && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.85, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={transition}
+        >
+          {active === item && (
+            <div className="absolute top-[calc(100%_+_1.2rem)] left-1/2 transform -translate-x-1/2 pt-4">
+              <motion.div
+                transition={transition}
+                layoutId="active"
+                className="bg-white dark:bg-black backdrop-blur-sm rounded-2xl overflow-hidden border border-black/[0.2] dark:border-white/[0.2] shadow-xl"
+              >
+                <motion.div layout className="w-max h-full p-4">
+                  {children}
+                </motion.div>
+              </motion.div>
+            </div>
+          )}
+        </motion.div>
+      )}
+    </div>
+  );
+};
+
+/* ---------------- Menu ---------------- */
+interface MenuProps {
+  setActive: (item: string | null) => void;
+  children: React.ReactNode;
+}
+
+export const Menu: React.FC<MenuProps> = ({ setActive, children }) => {
+  return (
+    <nav
+      onMouseLeave={() => setActive(null)}
+      className="relative rounded-full border border-transparent dark:bg-black dark:border-white/[0.2] bg-white shadow-input flex justify-center space-x-4 px-8 py-6"
+    >
+      {children}
+    </nav>
+  );
+};
+
+/* ---------------- ProductItem ---------------- */
+interface ProductItemProps {
+  title: string;
+  description: string;
+  href: string;
+  src: string;
+}
+
+export const ProductItem: React.FC<ProductItemProps> = ({ title, description, href, src }) => {
+  const isExternal = /^https?:\/\//.test(href);
+
+  const content = (
+    <div className="flex space-x-2">
+      <Img
+        src={src}
+        width={140}
+        height={70}
+        alt={title}
+        className="flex-shrink-0 rounded-md shadow-2xl object-cover"
+      />
+      <div>
+        <h4 className="text-xl font-bold mb-1 text-black dark:text-white">{title}</h4>
+        <p className="text-neutral-700 text-sm max-w-[10rem] dark:text-neutral-300">
+          {description}
+        </p>
+      </div>
+    </div>
+  );
+
+  if (isExternal) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className="inline-block transition-transform hover:scale-105">
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <RouterLink to={href} className="inline-block transition-transform hover:scale-105">
+      {content}
+    </RouterLink>
+  );
+};
+
+/* ---------------- HoveredLink ---------------- */
+interface HoveredLinkProps {
+  children: React.ReactNode;
+  href: string; // Changed from 'to' to 'href'
+  onClick?: () => void;
+  className?: string;
+}
+
+export const HoveredLink: React.FC<HoveredLinkProps> = ({ 
+  children, 
+  href, 
+  onClick,
+  className, 
+  ...rest 
+}) => {
+  const isExternal = /^https?:\/\//.test(href);
+  const baseClass = `text-neutral-700 dark:text-neutral-200 hover:text-black dark:hover:text-white transition-colors ${className || ""}`;
+
+  if (isExternal) {
+    return (
+      <a 
+        href={href} 
+        className={baseClass} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        onClick={onClick}
+        {...rest}
+      >
+        {children}
+      </a>
+    );
+  }
+
+  // For internal links, use RouterLink if it's a React Router link, otherwise use regular anchor
+  if (href.startsWith('/')) {
+    return (
+      <RouterLink 
+        to={href} 
+        className={baseClass} 
+        onClick={onClick}
+        {...rest as any}
+      >
+        {children}
+      </RouterLink>
+    );
+  }
+
+  // For hash links (like #section) use regular anchor
+  return (
+    <a 
+      href={href} 
+      className={baseClass} 
+      onClick={onClick}
+      {...rest}
+    >
+      {children}
+    </a>
+  );
+};
